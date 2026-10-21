@@ -85,66 +85,55 @@ function ExploreContent() {
     } catch { /* ignore */ }
     router.replace('/login');
   }, [router]);
-  const scheduledMovieIds = useMemo(() => {
+ const scheduledMovieIds = useMemo(() => {
     const activeShows = scheduledShowtimes.filter((st: any) => {
-      const match = (st.show_time || '').match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (!st.show_date || !st.show_time) return true;
+      const match = st.show_time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
       if (!match) return new Date(`${st.show_date}T23:59:59`) >= new Date();
       let h = parseInt(match[1], 10);
-      const m = parseInt(match[2], 10);
-      const p = match[3]?.toUpperCase();
+      let m = parseInt(match[2], 10);
+      let p = match[3]?.toUpperCase();
       if (p === 'PM' && h < 12) h += 12;
       if (p === 'AM' && h === 12) h = 0;
       return new Date(`${st.show_date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`) >= new Date();
     });
     return new Set(activeShows.map((s: any) => s.movieId));
   }, [scheduledShowtimes]);
-const scheduledMovieIds = useMemo(() => {
-  const activeShows = scheduledShowtimes.filter((st: any) => {
-    if (!st.show_date || !st.show_time) return true;
-    const [time, period] = st.show_time.split(' ');
-    let [h, m] = time.split(':').map(Number);
-    const p = period ? period.toUpperCase() : '';
-    if (p === 'PM' && h < 12) h += 12;
-    if (p === 'AM' && h === 12) h = 0;
-    return new Date(`${st.show_date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`) >= new Date();
-  });
-  return new Set(activeShows.map((s: any) => s.movieId));
-}, [scheduledShowtimes]);
 
-const filteredMovies = useMemo(() => {
-  let list = [...movies];
+  const filteredMovies = useMemo(() => {
+    let list = [...movies];
 
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase();
-    list = list.filter(m => 
-      m.title.toLowerCase().includes(q) || 
-      m.genre.toLowerCase().includes(q) || 
-      m.language.toLowerCase().includes(q)
-    );
-  }
-
-  if (activeFilter !== 'All') {
-    if (activeFilter === 'Coming Soon') {
-      list = list.filter(m => !scheduledShowtimes.some((s: any) => s.movieId === m.id));
-    } else if (['Hindi', 'English', 'Telugu'].includes(activeFilter)) {
-      list = list.filter(m => {
-        const langs = m.languages || [m.language];
-        return langs.some(l => l.toLowerCase().includes(activeFilter.toLowerCase()));
-      });
-    } else {
-      list = list.filter(m => {
-        const genres = m.genres || m.genre.split(',').map(g => g.trim());
-        return genres.some(g => g.toLowerCase().includes(activeFilter.toLowerCase()));
-      });
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(m => 
+        m.title.toLowerCase().includes(q) || 
+        m.genre.toLowerCase().includes(q) || 
+        m.language.toLowerCase().includes(q)
+      );
     }
-  }
 
-  return list;
-}, [movies, activeFilter, searchQuery, scheduledShowtimes]);
+    if (activeFilter !== 'All') {
+      if (activeFilter === 'Coming Soon') {
+        list = list.filter(m => !scheduledShowtimes.some((s: any) => s.movieId === m.id));
+      } else if (['Hindi', 'English', 'Telugu'].includes(activeFilter)) {
+        list = list.filter(m => {
+          const langs = m.languages || [m.language];
+          return langs.some(l => l.toLowerCase().includes(activeFilter.toLowerCase()));
+        });
+      } else {
+        list = list.filter(m => {
+          const genres = m.genres || m.genre.split(',').map(g => g.trim());
+          return genres.some(g => g.toLowerCase().includes(activeFilter.toLowerCase()));
+        });
+      }
+    }
 
-const nowShowingList = filteredMovies.filter(m => scheduledMovieIds.has(m.id));
-const catalogList = filteredMovies.filter(m => !scheduledMovieIds.has(m.id));
-const showSplit = activeFilter === 'All' && !searchQuery.trim();
+    return list;
+  }, [movies, activeFilter, searchQuery, scheduledShowtimes]);
+
+  const nowShowingList = filteredMovies.filter(m => scheduledMovieIds.has(m.id));
+  const catalogList = filteredMovies.filter(m => !scheduledMovieIds.has(m.id));
+  const showSplit = activeFilter === 'All' && !searchQuery.trim();
 
   const handleSelectMovie = (movie: Movie) => {
     setSelectedMovie(movie);

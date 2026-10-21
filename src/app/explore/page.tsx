@@ -112,7 +112,7 @@ function ExploreContent() {
 
     if (activeFilter !== 'All') {
       if (activeFilter === 'Coming Soon') {
-        list = list.filter(m => !scheduledMovieIds.has(m.id));
+        list = list.filter(m => !scheduledShowtimes.some((s: any) => s.movieId === m.id));
       } else if (['Hindi', 'English', 'Telugu'].includes(activeFilter)) {
         list = list.filter(m => {
           const langs = m.languages || [m.language];

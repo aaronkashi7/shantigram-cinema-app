@@ -99,17 +99,12 @@ function ExploreContent() {
     setAuthorized(true);
   }, [router]);
 
-  const scheduledMovieIds = useMemo(() => {
+ const scheduledMovieIds = useMemo(() => {
+    const now = new Date();
     const activeShows = scheduledShowtimes.filter((st: any) => {
-      if (!st.show_date || !st.show_time) return true;
-      const match = st.show_time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
-      if (!match) return new Date(`${st.show_date}T23:59:59`) >= new Date();
-      let h = parseInt(match[1], 10);
-      let m = parseInt(match[2], 10);
-      let p = match[3]?.toUpperCase();
-      if (p === 'PM' && h < 12) h += 12;
-      if (p === 'AM' && h === 12) h = 0;
-      return new Date(`${st.show_date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`) >= new Date();
+      if (!st.show_date) return false;
+      const showDate = new Date(`${st.show_date}T23:59:59`);
+      return showDate >= now;
     });
     return new Set(activeShows.map((s: any) => s.movieId));
   }, [scheduledShowtimes]);

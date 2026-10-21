@@ -131,7 +131,7 @@ function ExploreContent() {
 
   // Split into scheduled (now showing) and unscheduled (catalog/coming soon)
  const nowShowingList = filteredMovies.filter(m => scheduledMovieIds.has(m.id));
-const catalogList = filteredMovies.filter(m => !scheduledShowtimes.some((s: any) => s.movieId === m.id));
+const catalogList = filteredMovies.filter(m => (!m.showtimes || m.showtimes.length === 0) && !scheduledShowtimes.some((s: any) => s.movieId === m.id));
   const showSplit = activeFilter === 'All' && !searchQuery.trim();
 
   const handleSelectMovie = (movie: Movie) => {

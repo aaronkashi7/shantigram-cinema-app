@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, Search, X, Plus, Star, Clock, ChevronRight, Home as HomeIcon, Ticket, User, Bell, Loader2, Compass, Moon, Sun, LogOut, Info } from 'lucide-react';

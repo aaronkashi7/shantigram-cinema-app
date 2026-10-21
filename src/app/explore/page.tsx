@@ -99,7 +99,12 @@ function ExploreContent() {
     return new Set(activeShows.map((s: any) => s.movieId));
   }, [scheduledShowtimes]);
   const filteredMovies = useMemo(() => {
-    let list = [...movies];
+    let list = movies.filter(m => {
+    const hasActiveShow = scheduledMovieIds.has(m.id);
+    const everScheduled = scheduledShowtimes.some((s: any) => s.movieId === m.id);
+    if (everScheduled && !hasActiveShow) return false;
+    return true;
+  });
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();

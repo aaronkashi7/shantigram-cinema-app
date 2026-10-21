@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import {
+import { 
   ArrowLeft, Search, X, Star, Home as HomeIcon,
-  Ticket, User, Compass
+  Ticket, User, Compass 
 } from 'lucide-react';
 import { AppProvider, useApp } from '@/lib/context';
 import { Movie } from '@/lib/store';
@@ -15,59 +15,58 @@ const FILTER_PILLS = ['All', 'Hindi', 'English', 'Telugu', 'Action', 'Thriller',
 
 function MovieGridCard({ movie, isScheduled, onSelect }: { movie: Movie; isScheduled: boolean; onSelect: () => void }) {
   return (
-    <motion.div
-      whileTap={{ scale: 0.96 }}
-      className="cursor-pointer"
-    >
-      <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: '2/3' }}>
-        <AppImage
-          src={movie.poster}
-          alt={`${movie.title} movie poster`}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 50vw, 200px"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-        {/* Rating badge */}
-        <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm rounded-full px-2 py-1">
-          <Star size={10} fill="#FFD700" stroke="#FFD700" />
-          <span className="text-white text-xs font-bold">{movie.rating}</span>
-        </div>
-        {/* Certificate */}
-        <div className="absolute top-2 left-2 bg-primary/90 rounded px-1.5 py-0.5">
-          <span className="text-white text-xs font-bold">{movie.certificate}</span>
-        </div>
-        {/* Bottom info + CTA */}
-        <div className="absolute bottom-0 left-0 right-0 p-3">
-          <p className="text-white text-sm font-bold leading-tight line-clamp-2">{movie.title}</p>
-          <p className="text-gray-300 text-xs mt-0.5 truncate">
-            {movie.languages ? movie.languages.slice(0, 2).join(' · ') : movie.language}
-          </p>
-          <p className="text-gray-400 text-xs truncate mb-2">
-            {movie.genres ? movie.genres.slice(0, 2).join(' · ') : movie.genre.split(',').slice(0, 2).join(' · ')}
-          </p>
-          {/* CTA Button */}
-          {isScheduled ? (
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={onSelect}
-              className="w-full py-1.5 rounded-lg text-white text-xs font-bold flex items-center justify-center gap-1"
-              style={{ background: 'linear-gradient(135deg, #D32F2F 0%, #B71C1C 100%)' }}
-            >
-              <Ticket size={11} /> Book Tickets
-            </motion.button>
-          ) : (
-            <button
-              disabled
-              className="w-full py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-not-allowed"
-              style={{ background: '#2E2E2E', color: '#F59E0B', border: '1px solid #3E3E3E' }}
-            >
-              Coming Soon
-            </button>
-          )}
-        </div>
+    <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: '2/3' }}>
+      <AppImage
+        src={movie.poster}
+        alt={`${movie.title} movie poster`}
+        fill
+        className="object-cover"
+        sizes="(max-width: 768px) 50vw, 200px"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+      
+      {/* Rating badge */}
+      <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm rounded-full px-2 py-1">
+        <Star size={10} fill="#FFD700" stroke="#FFD700" />
+        <span className="text-white text-xs font-bold">{movie.rating}</span>
       </div>
-    </motion.div>
+
+      {/* Certificate */}
+      <div className="absolute top-2 left-2 bg-primary/90 rounded-px-1.5 py-0.5">
+        <span className="text-white text-xs font-bold">{movie.certificate}</span>
+      </div>
+
+      {/* Bottom info + CTA */}
+      <div className="absolute bottom-0 left-0 right-0 p-3">
+        <p className="text-white text-sm font-bold leading-tight line-clamp-2">{movie.title}</p>
+        <p className="text-gray-300 text-xs mt-0.5 truncate">
+          {movie.languages ? movie.languages.join(' · ') : movie.language}
+        </p>
+        <p className="text-gray-400 text-xs truncate mb-2">
+          {movie.genres ? movie.genres.join(' · ') : movie.genre.split(',').slice(0, 2).join(' · ')}
+        </p>
+
+        {/* CTA Button */}
+        {isScheduled ? (
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={onSelect}
+            className="w-full py-1.5 rounded-lg text-white text-xs font-bold flex items-center justify-center gap-1"
+            style={{ background: 'linear-gradient(135deg, #D32F2F 0%, #B71C1C 100%)' }}
+          >
+            <Ticket size={11} /> Book Tickets
+          </motion.button>
+        ) : (
+          <button
+            disabled
+            className="w-full py-1.5 rounded-lg text-xs font-bold flex items-center justify-center cursor-not-allowed"
+            style={{ background: '#2E2E2E', color: '#F59E0B', border: '1px solid #3E3E3E' }}
+          >
+            Coming Soon
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -80,12 +79,13 @@ function ExploreContent() {
 
   useEffect(() => {
     try {
-      const id = localStorage.getItem('adani_employeeId');
+      const id = localStorage.getItem('adani_employeeid');
       if (id) { setAuthorized(true); return; }
     } catch { /* ignore */ }
     router.replace('/login');
   }, [router]);
- const scheduledMovieIds = useMemo(() => {
+
+  const scheduledMovieIds = useMemo(() => {
     const activeShows = scheduledShowtimes.filter((st: any) => {
       if (!st.show_date || !st.show_time) return true;
       const match = st.show_time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
@@ -166,10 +166,14 @@ function ExploreContent() {
             )}
           </div>
         </div>
+        
+        {/* Township Badge */}
         <div className="flex items-center gap-1.5 mb-1">
           <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-          <span className="text-primary text-xs font-semibold">APML Tiroda</span>
+          <span className="text-primary text-xs font-semibold">APML Tirora</span>
         </div>
+
+        {/* Filter Pills */}
         <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
           {FILTER_PILLS.map(pill => (
             <button
@@ -183,6 +187,7 @@ function ExploreContent() {
         </div>
       </div>
 
+      {/* Main Container */}
       <div className="px-4 pt-4">
         {movies.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -200,7 +205,7 @@ function ExploreContent() {
               <Search size={28} className="text-gray-600" />
             </div>
             <p className="text-gray-400 text-sm text-center">No movies found for &quot;{activeFilter}&quot;</p>
-            <button onClick={() => { setActiveFilter('All'); setSearchQuery(''); }} className="text-primary text-sm font-semibold">Clear filters</button>
+            <button onClick={() => { setActiveFilter('All'); setSearchQuery(''); }} className="text-primary text-sm font-semibold">clear filters</button>
           </div>
         ) : showSplit ? (
           <>
@@ -224,6 +229,7 @@ function ExploreContent() {
                 </div>
               </div>
             )}
+
             {/* Catalog / Coming Soon Section */}
             {catalogList.length > 0 && (
               <div>
@@ -246,7 +252,7 @@ function ExploreContent() {
             )}
           </>
         ) : (
-          <>
+          <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-white text-base font-bold">{activeFilter === 'All' ? 'All Movies' : activeFilter}</h2>
               <span className="text-gray-500 text-xs">{filteredMovies.length} films</span>
@@ -261,24 +267,29 @@ function ExploreContent() {
                 />
               ))}
             </div>
-          </>
+          </div>
         )}
       </div>
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-40" style={{ background: 'rgba(18,18,18,0.97)', backdropFilter: 'blur(20px)', borderTop: '1px solid #2E2E2E' }}>
         <div className="flex items-center justify-around px-2 py-3">
-          {[
-            { icon: HomeIcon, label: 'Home', route: '/home', active: false },
-            { icon: Compass, label: 'Explore', route: '/explore', active: true },
-            { icon: Ticket, label: 'My Tickets', route: '/digital-boarding-pass-ticket', active: false },
-            { icon: User, label: 'Profile', route: '/profile', active: false },
-          ].map(item => (
-            <button key={`nav-${item.label}`} onClick={() => router.push(item.route)} className="flex flex-col items-center gap-1 min-w-0 px-3">
-              <item.icon size={22} className={item.active ? 'text-primary' : 'text-gray-500'} />
-              <span className={`text-xs font-medium ${item.active ? 'text-primary' : 'text-gray-500'}`}>{item.label}</span>
-            </button>
-          ))}
+          <button onClick={() => router.push('/home')} className="flex flex-col items-center gap-1 text-gray-500">
+            <HomeIcon size={20} />
+            <span className="text-[10px] font-medium">Home</span>
+          </button>
+          <button onClick={() => router.push('/explore')} className="flex flex-col items-center gap-1 text-primary">
+            <Compass size={20} />
+            <span className="text-[10px] font-medium">Explore</span>
+          </button>
+          <button onClick={() => router.push('/my-tickets')} className="flex flex-col items-center gap-1 text-gray-500">
+            <Ticket size={20} />
+            <span className="text-[10px] font-medium">My Tickets</span>
+          </button>
+          <button onClick={() => router.push('/admin/dashboard')} className="flex flex-col items-center gap-1 text-gray-500">
+            <User size={20} />
+            <span className="text-[10px] font-medium">Profile</span>
+          </button>
         </div>
       </div>
     </div>

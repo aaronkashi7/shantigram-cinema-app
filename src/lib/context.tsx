@@ -117,15 +117,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // Fetch showtimes from Supabase — always trust what Supabase returns
         const { data: showtimesData } = await supabase.from('showtimes').select('*');
         const mappedScheduled: ScheduledShowtime[] = (showtimesData ?? []).map((s: any) => ({
-          id: s.id,
-          movieId: s.movie_id,
-          date: s.show_date,
-          time: s.show_time,
-          totalSeats: s.total_seats || 197,
-          lockedSeats: s.locked_seats || [],
-          blockedSeats: s.blocked_seats || [],
-        }));
-        setScheduledShowtimes(mappedScheduled);
+        id: s.id,
+        movieId: s.movie_id,
+        date: s.show_date,
+        time: s.show_time,
+        totalSeats: s.total_seats || 197,
+        lockedSeats: s.locked_seats || [],
+        blockedSeats: s.blocked_seats || [],
+      })).filter((st) => {
+        const match = (st.time || '').match(/(\d+):(\d+)\s*(AM|PM)?/i);
+        if (!match) return new Date(`${st.date}T23:59:59`) > new Date();
+        let hours = parseInt(match[1], 10);
+        const minutes = parseInt(match[2], 10);
+        const period = match[3]?.toUpperCase();
+        if (period === 'PM' && hours < 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+        const showDateTime = new Date(`${st.date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);
+        return showDateTime > new Date();
+      });
+      setScheduledShowtimes(mappedScheduled);
+      safeLocalSet('adani_all_showtimes_raw', showtimesData);
         // Pre-generate seat matrices
         mappedScheduled.forEach(st => {
           if (!seatCache[st.id]) {
@@ -388,7 +399,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const isMovieScheduled = useCallback((movieId: string): boolean => {
     return scheduledShowtimes.some(s => s.movieId === movieId);
   }, [scheduledShowtimes]);
-
+const getMovieHistoryShowtimes = useCallback((): ScheduledShowtime[] => {
+    // Returns past showtimes for history log
+    return (localStorage.getItem('adani_all_showtimes_raw') ? JSON.parse(localStorage.getItem('adani_all_showtimes_raw') || '[]') : []).filter((st: any) => {
+      const match = (st.show_time || '').match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (!match) return new Date(`${st.show_date}T23:59:59`) < new Date();
+      let hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const period = match[3]?.toUpperCase();
+      if (period === 'PM' && hours < 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+      const showDateTime = new Date(`${st.show_date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);
+      return showDateTime < new Date();
+    });
+  }, []);
   // ---- Seat Matrix ----
 
   const getSeatMatrix = useCallback((showtimeId: string): Seat[] => {

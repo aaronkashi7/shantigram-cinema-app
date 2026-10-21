@@ -641,12 +641,73 @@ function ActiveSchedulesModal({ onClose }: { onClose: () => void }) {
     </motion.div>
   );
 }
+// ---- Cinema History Modal ----
+function HistorySchedulesModal({ onClose }: { onClose: () => void }) {
+  const { movies } = useApp();
+  const rawShowtimes = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('adani_all_showtimes_raw') || '[]') : [];
+  
+  const historyShowtimes = rawShowtimes.filter((st: any) => {
+    const match = (st.show_time || '').match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    if (!match) return new Date(`${st.show_date}T23:59:59`) < new Date();
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const period = match[3]?.toUpperCase();
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    const showDateTime = new Date(`${st.show_date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);
+    return showDateTime < new Date();
+  });
 
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.85)' }} onClick={onClose}>
+      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+        className="w-full max-w-2xl rounded-3xl overflow-hidden"
+        style={{ background: '#1A1A1A', border: '1px solid #2E2E2E', maxHeight: '80vh' }}
+        onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <div>
+            <h3 className="text-white text-lg font-bold">Cinema History (Past Shows)</h3>
+            <p className="text-gray-500 text-xs">{historyShowtimes.length} completed schedule{historyShowtimes.length !== 1 ? 's' : ''}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl bg-muted">
+            <X size={18} className="text-white" />
+          </button>
+        </div>
+        <div className="overflow-y-auto p-6" style={{ maxHeight: 'calc(80vh - 80px)' }}>
+          {historyShowtimes.length === 0 ? (
+            <div className="py-12 flex flex-col items-center gap-3 text-center">
+              <CalendarCheck size={32} className="text-gray-600" />
+              <p className="text-gray-400 text-sm font-semibold">No past schedules found</p>
+              <p className="text-gray-600 text-xs">Completed showtimes will automatically archive here.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {historyShowtimes.map((st: any) => {
+                const movie = movies.find(m => m.id === st.movie_id);
+                return (
+                  <div key={st.id} className="p-4 rounded-2xl bg-black/40 border border-gray-800 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-white font-semibold text-sm">{movie?.title || 'Unknown Movie'}</h4>
+                      <p className="text-gray-400 text-xs mt-1">Date: {st.show_date} | Time: {st.show_time}</p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-gray-800 text-gray-400 text-xs font-medium">Completed</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
 // ---- Overview Panel (Heatmap removed — only 3 metric cards) ----
 function OverviewPanel({ onShowCatalog }: { onShowCatalog: () => void }) {
   const { movies, scheduledShowtimes, bookings } = useApp();
   const [showActiveSchedulesModal, setShowActiveSchedulesModal] = useState(false);
-
+const [showHistoryModal, setShowHistoryModal] = useState(false);
   const totalSeatsAllBookings = bookings.reduce((acc, b) => acc + b.seats.length, 0);
 
   return (
@@ -688,7 +749,35 @@ function OverviewPanel({ onShowCatalog }: { onShowCatalog: () => void }) {
           <p className="text-white text-3xl font-extrabold">{scheduledShowtimes.length}</p>
           <p className="text-green-400 text-xs mt-1 flex items-center gap-1">Total upcoming shows scheduled <ChevronRight size={12} /></p>
         </motion.button>
-
+{/* Cinema History Card */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowHistoryModal(true)}
+              className="p-5 rounded-2xl text-left cursor-pointer transition-all"
+              style={{ background: '#1A1A1A', border: '1px solid #2E2E2E' }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-900/30 border border-purple-800/40 flex items-center justify-center">
+                  <CalendarCheck size={20} className="text-purple-400" />
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold text-sm">Cinema History</h4>
+                  <p className="text-gray-400 text-xs">View past completed shows</p>
+                </div>
+              </div>
+              <p className="text-white text-3xl font-extrabold">{typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('adani_all_showtimes_raw') || '[]').filter((st: any) => {
+                const match = (st.show_time || '').match(/(\d+):(\d+)\s*(AM|PM)?/i);
+                if (!match) return new Date(`${st.show_date}T23:59:59`) < new Date();
+                let h = parseInt(match[1], 10);
+                const m = parseInt(match[2], 10);
+                const p = match[3]?.toUpperCase();
+                if (p === 'PM' && h < 12) h += 12;
+                if (p === 'AM' && h === 12) h = 0;
+                return new Date(`${st.show_date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`) < new Date();
+              }).length : 0}</p>
+              <p className="text-purple-400 text-xs mt-1 flex items-center gap-1">View completed archive <ChevronRight size={12} /></p>
+            </motion.button>
         {/* Total Seats Booked */}
         <div className="p-5 rounded-2xl" style={{ background: '#1A1A1A', border: '1px solid #2E2E2E' }}>
           <div className="flex items-center gap-3 mb-3">
@@ -707,6 +796,9 @@ function OverviewPanel({ onShowCatalog }: { onShowCatalog: () => void }) {
         {showActiveSchedulesModal && (
           <ActiveSchedulesModal onClose={() => setShowActiveSchedulesModal(false)} />
         )}
+        {showHistoryModal && (
+        <HistorySchedulesModal onClose={() => setShowHistoryModal(false)} />
+      )}
       </AnimatePresence>
     </div>
   );

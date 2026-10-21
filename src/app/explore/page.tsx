@@ -79,7 +79,7 @@ function ExploreContent() {
 
   useEffect(() => {
     try {
-      const id = localStorage.getItem('adani_employeeid');
+      const id = localStorage.getItem('employeeId');
       if (id) { setAuthorized(true); return; }
     } catch { /* ignore */ }
     router.replace('/login');

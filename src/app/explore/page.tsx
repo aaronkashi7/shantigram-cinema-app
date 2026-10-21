@@ -98,22 +98,36 @@ function ExploreContent() {
     });
     return new Set(activeShows.map((s: any) => s.movieId));
   }, [scheduledShowtimes]);
-  const filteredMovies = useMemo(() => {
-    let list = movies.filter(m => {
-    // If it's one of the old finished test movies and has no active shows today, skip it
-    const hasActiveShow = scheduledMovieIds.has(m.id);
-    const everScheduled = scheduledShowtimes.some((s: any) => s.movieId === m.id);
-    
-    // If it ever had a showtime, but has NO active show today, hide it from Explore completely
-    if (everScheduled && !hasActiveShow) return false;
-    
-    // Fallback: if it's explicitly one of the legacy mock movies with no active shows, hide it
-    if ((m.title === 'The Revenge' || m.title === 'Dhurandhar The Revenge' || m.title === 'Jawan') && !hasActiveShow) {
-      return false;
-    }
+const filteredMovies = useMemo(() => {
+  let list = [...movies];
 
-    return true;
-  });
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    list = list.filter(m => 
+      m.title.toLowerCase().includes(q) || 
+      m.genre.toLowerCase().includes(q) || 
+      m.language.toLowerCase().includes(q)
+    );
+  }
+
+  if (activeFilter !== 'All') {
+    if (activeFilter === 'Coming Soon') {
+      list = list.filter(m => !scheduledShowtimes.some((s: any) => s.movieId === m.id));
+    } else if (['Hindi', 'English', 'Telugu'].includes(activeFilter)) {
+      list = list.filter(m => {
+        const langs = m.languages || [m.language];
+        return langs.some(l => l.toLowerCase().includes(activeFilter.toLowerCase()));
+      });
+    } else {
+      list = list.filter(m => {
+        const genres = m.genres || m.genre.split(',').map(g => g.trim());
+        return genres.some(g => g.toLowerCase().includes(activeFilter.toLowerCase()));
+      });
+    }
+  }
+
+  return list;
+}, [movies, activeFilter, searchQuery, scheduledShowtimes]);
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();

@@ -85,8 +85,19 @@ function ExploreContent() {
     } catch { /* ignore */ }
     router.replace('/login');
   }, [router]);
-  const scheduledMovieIds = useMemo(() => new Set(scheduledShowtimes.map(s => s.movieId)), [scheduledShowtimes]);
-
+  const scheduledMovieIds = useMemo(() => {
+    const activeShows = scheduledShowtimes.filter((st: any) => {
+      const match = (st.show_time || '').match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (!match) return new Date(`${st.show_date}T23:59:59`) >= new Date();
+      let h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      const p = match[3]?.toUpperCase();
+      if (p === 'PM' && h < 12) h += 12;
+      if (p === 'AM' && h === 12) h = 0;
+      return new Date(`${st.show_date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`) >= new Date();
+    });
+    return new Set(activeShows.map((s: any) => s.movieId));
+  }, [scheduledShowtimes]);
   const filteredMovies = useMemo(() => {
     let list = [...movies];
 

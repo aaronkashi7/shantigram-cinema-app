@@ -48,19 +48,54 @@ function MovieCard({ movie, onSelect }: { movie: Movie; onSelect: () => void }) 
 }
 
 function HeroCarousel({ movies, onSelect }: { movies: Movie[]; onSelect: (m: Movie) => void }) {
+  const { scheduledShowtimes } = useApp();
   const [current, setCurrent] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 1. Identify which movies have an ACTIVE showtime (today or future)
+  const activeMovieIds = useMemo(() => {
+    const activeShows = scheduledShowtimes.filter((st: any) => {
+      if (!st.show_date || !st.show_time) return true;
+      const [time, period] = st.show_time.split(' ');
+      let [h, m] = time.split(':').map(Number);
+      const p = period ? period.toUpperCase() : '';
+      if (p === 'PM' && h < 12) h += 12;
+      if (p === 'AM' && h === 12) h = 0;
+      return new Date(`${st.show_date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`) >= new Date();
+    });
+    return new Set(activeShows.map((s: any) => s.movieId));
+  }, [scheduledShowtimes]);
+
+  // 2. Keep ONLY Now Showing + Truly Upcoming (exclude expired/past movies)
+  const bannerMovies = useMemo(() => {
+    return movies.filter(m => {
+      const hasActiveShow = activeMovieIds.has(m.id);
+      const everScheduled = scheduledShowtimes.some((s: any) => s.movieId === m.id);
+
+      // If it had showtimes in the past but has NO active show today -> Expired (hide)
+      if (everScheduled && !hasActiveShow) return false;
+
+      // Hide legacy test movies if they don't have an active showtime today
+      if ((m.title === 'The Revenge' || m.title === 'Dhurandhar The Revenge' || m.title === 'Jawan') && !hasActiveShow) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [movies, activeMovieIds, scheduledShowtimes]);
+
   useEffect(() => {
-    if (movies.length === 0) return;
+    if (bannerMovies.length === 0) return;
     timerRef.current = setTimeout(() => {
-      setCurrent(c => (c + 1) % movies.length);
+      setCurrent(c => (c + 1) % bannerMovies.length);
     }, 4000);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [current, movies.length]);
+  }, [current, bannerMovies.length]);
 
-  if (movies.length === 0) return null;
-  const movie = movies[current];
+  if (bannerMovies.length === 0) return null;
+  const safeIndex = current >= bannerMovies.length ? 0 : current;
+  const movie = bannerMovies[safeIndex];
+  const isNowShowing = activeMovieIds.has(movie.id);
 
   return (
     <div className="relative w-full overflow-hidden rounded-3xl" style={{ height: '260px' }}>
@@ -73,49 +108,56 @@ function HeroCarousel({ movies, onSelect }: { movies: Movie[]; onSelect: (m: Mov
           transition={{ duration: 0.5 }}
           className="absolute inset-0"
         >
-          <AppImage
-            src={movie.poster}
-            alt={`${movie.title} hero banner`}
-            fill
-            className="object-cover"
-            priority
-            sizes="100vw"
-          />
+          <AppImage src={movie.poster} alt={`${movie.title} hero banner`} fill priority className="object-cover" sizes="100vw" />
           <div className="hero-gradient absolute inset-0" />
         </motion.div>
       </AnimatePresence>
 
       <div className="absolute bottom-0 left-0 right-0 p-5">
         <div className="flex items-center gap-2 mb-2">
-          <span className="bg-primary text-white text-xs font-bold px-2 py-0.5 rounded">NOW SHOWING</span>
+          {isNowShowing ? (
+            <span className="bg-primary text-white text-xs font-bold px-2 py-0.5 rounded">NOW SHOWING</span>
+          ) : (
+            <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded">COMING SOON</span>
+          )}
           <span className="text-muted-foreground text-xs">{movie.year}</span>
         </div>
         <h2 className="text-white text-2xl font-extrabold leading-tight mb-1 truncate">{movie.title}</h2>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
-            <Star size={12} fill="#FFD700" stroke="#FFD700" />
+            <Star fill="#FFD700" size={12} stroke="#FFD700"/>
             <span className="text-white text-sm font-semibold">{movie.rating}/10</span>
           </div>
-          <span className="text-muted-foreground text-xs">·</span>
+          <span className="text-muted-foreground text-xs">•</span>
           <span className="text-muted-foreground text-xs">{movie.genre.split(',')[0]}</span>
-          <span className="text-muted-foreground text-xs">·</span>
+          <span className="text-muted-foreground text-xs">•</span>
           <span className="text-muted-foreground text-xs">{movie.runtime}</span>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.96 }}
-          onClick={() => onSelect(movie)}
-          className="mt-3 bg-primary text-white text-sm font-bold px-5 py-2.5 rounded-xl flex items-center gap-2"
-        >
-          Book Tickets <ChevronRight size={16} />
-        </motion.button>
+        {isNowShowing ? (
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={() => onSelect(movie)}
+            className="mt-3 bg-primary text-white text-sm font-bold px-5 py-2.5 rounded-xl flex items-center gap-2"
+          >
+            Book Tickets <ChevronRight size={16}/>
+          </motion.button>
+        ) : (
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={() => onSelect(movie)}
+            className="mt-3 bg-white/15 backdrop-blur-md text-white text-sm font-semibold px-4 py-2 rounded-xl flex items-center gap-2"
+          >
+            Coming Soon • View Details <ChevronRight size={16}/>
+          </motion.button>
+        )}
       </div>
 
       <div className="absolute top-4 right-4 flex gap-1.5">
-        {movies.map((_, i) => (
+        {bannerMovies.map((_, i) => (
           <button
             key={`dot-${i}`}
             onClick={() => setCurrent(i)}
-            className={`rounded-full transition-all duration-300 ${i === current ? 'w-5 h-1.5 bg-primary' : 'w-1.5 h-1.5 bg-white/40'}`}
+            className={`rounded-full transition-all duration-300 ${i === safeIndex ? 'w-5 h-1.5 bg-primary' : 'w-1.5 h-1.5 bg-white/40'}`}
           />
         ))}
       </div>
